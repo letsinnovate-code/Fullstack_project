@@ -143,7 +143,7 @@ const verifyUser = async (req,res) =>{
 }
 
 
-const userLogin = async (req , res) => {
+const login = async (req , res) => {
     const {email, password} = req.body
 
     if(!email || !password){
@@ -159,6 +159,8 @@ const userLogin = async (req , res) => {
         message:"Invalid email or password!"
     })
    }
+
+   
 
    const isMatch =  await bcrypt.compare(password,user.password)
 
@@ -201,8 +203,11 @@ const userLogin = async (req , res) => {
 
 
     } catch (error) {
-        
+        res.status(400).json({
+            message:"login failed",
+            success:false
+        })
     }
 }
 
-export {registerUser , verifyUser , userLogin}
+export {registerUser , verifyUser , login}
