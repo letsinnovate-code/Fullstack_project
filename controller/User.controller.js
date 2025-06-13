@@ -1,7 +1,9 @@
 import User from "../model/User.model.js";
 import crypto from "crypto"
 import nodamailer from "nodemailer"
-import bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
+import cookieParser from "cookie-parser";
 
 const registerUser = async (req,res)=>{
     
@@ -21,13 +23,13 @@ if(!name || !email || !password){
 
     //check if user already exists
 try {
-    // const existingUser = User.findOne({email})
+    const existingUser = User.findOne({email})
 
-    // if(existingUser){
-    //     return res.status(400).json({
-    //         message:"User already exists"
-    //     })
-    // }
+    if(existingUser){
+        return res.status(400).json({
+            message:"User already exists"
+        })
+    }
  // if not exists create a user in database 
    const user = await User.create({
     name,
@@ -42,36 +44,36 @@ try {
    }
   
 //  //create a verification token 
-// const token = crypto.randomBytes(32).toString("hex")
-// console.log(token);
+const token = crypto.randomBytes(32).toString("hex")
+console.log(token);
 
 
-// user.verificationToken = token;
-// // save token in database 
-// await user.save()
+user.verificationToken = token;
+// save token in database 
+await user.save()
 
-// // send token as an email to user 
-// const transporter = nodemailer.createTransport({
-//   host: process.env.MAILTRAP_HOST,
-//   port: process.env.MAILTRAP_PORT,
-//   secure: false, // true for 465, false for other ports
-//   auth: {
-//     user: process.env.MAILTRAP_USERNAME,
-//     pass:process.env.MAILTRAP_PASSWORD,
-//   },
-// });
+// send token as an email to user 
+const transporter = nodemailer.createTransport({
+  host: process.env.MAILTRAP_HOST,
+  port: process.env.MAILTRAP_PORT,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.MAILTRAP_USERNAME,
+    pass:process.env.MAILTRAP_PASSWORD,
+  },
+});
 
 
-// const mailOptions = {
-//     from: process.env.MAILTRAP_SENDEREMAIL,
-//     to: user.email,
-//     subject: "Verify your account",
-//     text: `Please click on the following link:
-//     ${process.env.BASE_URL}/api/v1/users/verify${token}`, // plain‑text body
+const mailOptions = {
+    from: process.env.MAILTRAP_SENDEREMAIL,
+    to: user.email,
+    subject: "Verify your account",
+    text: `Please click on the following link:
+    ${process.env.BASE_URL}/api/v1/users/verify${token}`, // plain‑text body
     
-//   };
+  };
 
-//       await transporter.sendMail(mailOptions)
+      await transporter.sendMail(mailOptions)
 
 // send success status to user
 
@@ -164,11 +166,43 @@ const userLogin = async (req , res) => {
     return res.status(400).json({
         message:"invalid credentials"
     })
-   }
+   };
+
+
+  const token = jwt.sign({id : user._id , role: user.role},
+     
+    
+    "private key",{
+        expiresIn : "24h"
+
+
+     }
+  );
+
+  // for access cookies
+  const cookieOptions = {
+    httpOnly:true,
+    secure:true,
+    maxAge:24*60*60*1000
+  }
+  res.cookie("test",token , cookieOptions)
+
+
+  res.status(200).json({
+    success:true,
+    message:"Login successfully",
+    token,
+    user:{
+        id:user._id,
+        name:user.name,
+        role:user.role,
+    },
+  })
+
 
     } catch (error) {
         
     }
 }
 
-export {registerUser , verifyUser}
+export {registerUser , verifyUser , userLogin}
