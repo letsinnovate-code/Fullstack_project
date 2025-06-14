@@ -210,4 +210,14 @@ const login = async (req , res) => {
     }
 }
 
+const logout = async (req, res) =>{
+    const { email , password} = req.body 
+
+    if(!email || !password ){
+        return res.status(400).json({
+            massage:"user already logedout"
+        })
+    }
+}
+
 export {registerUser , verifyUser , login}
